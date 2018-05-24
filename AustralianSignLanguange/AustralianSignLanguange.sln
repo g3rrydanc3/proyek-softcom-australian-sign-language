@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.3
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AustralianSignLanguange", "AustralianSignLanguange\AustralianSignLanguange.csproj", "{5D784FFF-3F2E-4D4B-B9FB-56D3E248883B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5D784FFF-3F2E-4D4B-B9FB-56D3E248883B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D784FFF-3F2E-4D4B-B9FB-56D3E248883B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D784FFF-3F2E-4D4B-B9FB-56D3E248883B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D784FFF-3F2E-4D4B-B9FB-56D3E248883B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F187A271-B2C2-4ABA-B3BD-D1E8D36C4DCA}
+	EndGlobalSection
+EndGlobal
