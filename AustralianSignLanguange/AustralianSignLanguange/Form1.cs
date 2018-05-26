@@ -14,8 +14,8 @@ namespace AustralianSignLanguange
 {
     public partial class Form1 : Form
     {
-        //List<List<String>> data = new List<List<String>>();
-        String[,] data;
+        Dictionary<string, List<int>> data;
+
         String[] kata = {"alive", "all", "answer", "boy", "building", "buy", "change",
                     "cold", "come", "computer", "cost", "crazy", "danger", "deaf",
                     "different", "draw", "drink", "eat", "exit", "flash-light",
@@ -38,19 +38,14 @@ namespace AustralianSignLanguange
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            var myDicList = new MultiDimDictList<string, int>();
-            myDicList.Add("ages", new List<T>());
-            myDicList["ages"].Add(23);
-            myDicList["ages"].Add(32);
-            myDicList["ages"].Add(18);
+            data = new Dictionary<string, List<int>>();
 
-            myDicList.Add("salaries", new List<int>());
-            myDicList["salaries"].Add(80000);
-            myDicList["salaries"].Add(100000);
-
-            myDicList.Add("accountIds", new List<T>());
-            myDicList["accountIds"].Add(321123);
-            myDicList["accountIds"].Add(342653);
+            data.Add("alive", new List<int>());
+            data["alive"].Add(123);
+            data["alive"].Add(123);
+            data["alive"].Add(123);
+            data["alive"].Add(123);
+            
             load("signs");
         }
 
