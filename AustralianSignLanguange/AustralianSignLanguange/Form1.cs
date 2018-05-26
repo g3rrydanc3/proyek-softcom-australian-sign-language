@@ -9,27 +9,22 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Diagnostics;
+using Accord.Controls;
+using Accord.MachineLearning.VectorMachines.Learning;
+using Accord.Math.Optimization.Losses;
+using Accord.Statistics;
+using Accord.Statistics.Kernels;
 
 namespace AustralianSignLanguange
 {
     public partial class Form1 : Form
     {
-        Dictionary<string, List<int>> data;
+        String rootFolder;
 
-        String[] kata = {"alive", "all", "answer", "boy", "building", "buy", "change",
-                    "cold", "come", "computer", "cost", "crazy", "danger", "deaf",
-                    "different", "draw", "drink", "eat", "exit", "flash-light",
-                    "forget", "girl", "give", "glove", "go", "God", "happy", "head",
-                    "hear","hello", "her", "hot", "how", "hurry", "hurt", "I",
-                    "innocent", "is", "joke", "juice", "know", "later", "lose",
-                    "love", "make", "man", "maybe", "mine", "money", "more", "name",
-                    "no", "Norway", "not-my-problem", "paper", "pen", "please",
-                    "polite", "question", "read", "ready", "research", "responsible",
-                    "right", "sad", "same", "science", "share", "shop", "soon",
-                    "sorry", "spend", "stubborn", "surprise", "take", "temper",
-                    "thank", "think", "tray", "us", "voluntary", "wait", "what",
-                    "when", "where", "which", "who", "why", "wild", "will",
-                    "write", "wrong", "yes", "you", "zero"};
+        Dictionary<string, List<List<int>>> data;
+
+        List<String> allKata;
+
 
         public Form1()
         {
@@ -38,46 +33,124 @@ namespace AustralianSignLanguange
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            data = new Dictionary<string, List<int>>();
+            rootFolder = "signs";
+            allKata = new List<String>();
 
-            data.Add("alive", new List<int>());
-            data["alive"].Add(123);
-            data["alive"].Add(123);
-            data["alive"].Add(123);
-            data["alive"].Add(123);
-            
-            load("signs");
+            data = new Dictionary<string, List<List<int>>>();
+            List<List<int>> dataAlive = new List<List<int>>();
+
         }
 
-        private void load(string rootFolder)
+        private void getAllKata(String rootFolder)
         {
-            var signers = Directory.GetDirectories(rootFolder);
+            allKata.Clear();
+            checkedListBoxAllKata.Items.Clear();
+            checkedListBoxOrang.Items.Clear();
 
-            foreach (var signer in signers)
+            log("GET ALL KATA");
+
+            foreach (String signer in Directory.GetDirectories(rootFolder))
             {
-                var samples = Directory.GetFiles(signer);
-                foreach (var sample in samples)
-                {
-                    String name = sample.ToString();
-                    String[] filename = name.Split('\\');
-                    
-                    string[] lines = System.IO.File.ReadAllLines(AppDomain.CurrentDomain.BaseDirectory + sample);
-                    
-                    // Display the file contents by using a foreach loop.
-                    foreach (string line in lines)
-                    {
-                        for(int i = 0; i < kata.Length; i++)
-                        {
-                            if (kata[i] == filename[2])
-                            {
+                checkedListBoxOrang.Items.Add(signer.Split('\\')[1], true);
 
-                            }
-                        }
-                        // Use a tab to indent each line of the file.
-                        //Debug.WriteLine("\t" + line);
+                foreach (String directoryFile in Directory.GetFiles(signer))
+                {
+                    String fileName = directoryFile.Split('\\')[2];
+                    String kata = fileName.Substring(0, fileName.Length - 6).ToLower();
+                    
+                    if (!allKata.Contains(kata))
+                    {
+                        allKata.Add(kata);
                     }
                 }
             }
+
+            foreach (String kata in allKata)
+            {
+                checkedListBoxAllKata.Items.Add(kata, true);
+            }
+
+            log("GET ALL KATA DONE");
+            log("------------------------------------");
+        }
+
+        private async void train()
+        {
+            log("TRAINING");
+            log("Preparing Data");
+
+            await Task.Run(() =>
+            {
+                foreach (String signer in checkedListBoxOrang.Items)
+                {
+                    String signerNew = rootFolder + "\\" + signer;
+                    foreach (String directoryFile in Directory.GetFiles(signerNew))
+                    {
+                        String fileName = directoryFile.Split('\\')[2];
+                        String kata = fileName.Substring(0, fileName.Length - 6).ToLower();
+                        if (checkedListBoxAllKata.Items.Contains(kata))
+                        {
+                            log(kata);
+
+                            String[] lines = File.ReadAllLines(AppDomain.CurrentDomain.BaseDirectory + directoryFile);
+
+                            foreach (string line in lines)
+                            {
+
+                                for (int i = 0; i < kata.Length; i++)
+                                {
+                                    if (allKata[i] == kata)
+                                    {
+
+                                    }
+                                }
+                                // Use a tab to indent each line of the file.
+                                //Debug.WriteLine("\t" + line);
+                            }
+                        }
+                    }
+                }
+            });
+            
+            //https://github.com/accord-net/framework/wiki/Classification
+            // Read the Excel worksheet into a DataTable
+            //DataTable table = new ExcelReader("examples.xls").GetWorksheet("Classification - Yin Yang");
+
+            // Convert the DataTable to input and output vectors
+            //double[][] inputs = table.ToJagged<double>("X", "Y");
+            //int[] outputs = table.Columns["G"].ToArray<int>();
+
+            // Plot the data
+            //ScatterplotBox.Show("Yin-Yang", inputs, outputs).Hold();
+            log("------------------------------------");
+        }
+
+        private void result()
+        {
+
+        }
+
+        private async void log(String message)
+        {
+            textBoxLog.Invoke(
+                new Action(() =>
+                {
+                    textBoxLog.AppendText(message + "\r\n");
+                    textBoxLog.SelectionStart = textBoxLog.TextLength;
+                    textBoxLog.ScrollToCaret();
+                })
+            );
+            
+        }
+
+        private void buttonInit_Click(object sender, EventArgs e)
+        {
+            getAllKata(rootFolder);
+        }
+
+        private void buttonTrain_Click(object sender, EventArgs e)
+        {
+            train();
         }
     }
 }
