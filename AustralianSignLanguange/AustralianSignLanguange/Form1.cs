@@ -25,6 +25,9 @@ namespace AustralianSignLanguange
 
         List<String> allKata;
 
+        int[,] mean;
+        
+
 
         public Form1()
         {
@@ -34,11 +37,9 @@ namespace AustralianSignLanguange
         private void Form1_Load(object sender, EventArgs e)
         {
             rootFolder = "signs";
-            allKata = new List<String>();
-
+            allKata = new List<String>();   
             data = new Dictionary<string, List<List<int>>>();
             List<List<int>> dataAlive = new List<List<int>>();
-
         }
 
         private void getAllKata(String rootFolder)
@@ -79,6 +80,11 @@ namespace AustralianSignLanguange
             log("TRAINING");
             log("Preparing Data");
 
+            for (int i = 0; i < allKata.Count(); i++)
+            {
+                data.Add(allKata[i], new List<List<int>>());
+            }
+
             await Task.Run(() =>
             {
                 foreach (String signer in checkedListBoxOrang.Items)
@@ -87,6 +93,7 @@ namespace AustralianSignLanguange
                     foreach (String directoryFile in Directory.GetFiles(signerNew))
                     {
                         String fileName = directoryFile.Split('\\')[2];
+                        Debug.WriteLine(fileName);
                         String kata = fileName.Substring(0, fileName.Length - 6).ToLower();
                         if (checkedListBoxAllKata.Items.Contains(kata))
                         {
@@ -96,12 +103,12 @@ namespace AustralianSignLanguange
 
                             foreach (string line in lines)
                             {
-
-                                for (int i = 0; i < kata.Length; i++)
+                                for (int i = 0; i < allKata.Count(); i++)
                                 {
                                     if (allKata[i] == kata)
                                     {
-
+                                        data["alive"][0].Add(1);
+                                        data["alive"][0].Add(2);
                                     }
                                 }
                                 // Use a tab to indent each line of the file.
@@ -151,6 +158,40 @@ namespace AustralianSignLanguange
         private void buttonTrain_Click(object sender, EventArgs e)
         {
             train();
+        }
+
+        private void meanNormalization()
+        {
+
+        }
+
+        private void covariance()
+        {
+
+        }
+
+        private void eigenValue()
+        {
+
+        }
+
+        private void eigenVector()
+        {
+
+        }
+
+        private void pcaResult()
+        {
+
+        }
+
+        private void pca()
+        {
+            meanNormalization();
+            covariance();
+            eigenValue();
+            eigenVector();
+            pcaResult();
         }
     }
 }
