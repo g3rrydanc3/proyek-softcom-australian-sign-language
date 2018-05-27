@@ -21,9 +21,9 @@ namespace AustralianSignLanguange
     {
         String rootFolder;
 
-        Dictionary<string, List<List<int>>> data;
+        int[] usingColumns = { 0, 1, 2 };
 
-        List<String> allKata;
+        Dictionary<string, List<List<Decimal>>> data;
 
         int[,] mean;
         
@@ -37,14 +37,11 @@ namespace AustralianSignLanguange
         private void Form1_Load(object sender, EventArgs e)
         {
             rootFolder = "signs";
-            allKata = new List<String>();   
-            data = new Dictionary<string, List<List<int>>>();
-            List<List<int>> dataAlive = new List<List<int>>();
+            data = new Dictionary<string, List<List<Decimal>>>();
         }
 
         private void getAllKata(String rootFolder)
         {
-            allKata.Clear();
             checkedListBoxAllKata.Items.Clear();
             checkedListBoxOrang.Items.Clear();
 
@@ -59,16 +56,11 @@ namespace AustralianSignLanguange
                     String fileName = directoryFile.Split('\\')[2];
                     String kata = fileName.Substring(0, fileName.Length - 6).ToLower();
                     
-                    if (!allKata.Contains(kata))
+                    if (!checkedListBoxAllKata.Items.Contains(kata))
                     {
-                        allKata.Add(kata);
+                        checkedListBoxAllKata.Items.Add(kata, true);
                     }
                 }
-            }
-
-            foreach (String kata in allKata)
-            {
-                checkedListBoxAllKata.Items.Add(kata, true);
             }
 
             log("GET ALL KATA DONE");
@@ -80,43 +72,48 @@ namespace AustralianSignLanguange
             log("TRAINING");
             log("Preparing Data");
 
-            for (int i = 0; i < allKata.Count(); i++)
+            for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
             {
-                data.Add(allKata[i], new List<List<int>>());
+                data.Add(checkedListBoxAllKata.Items[i].ToString(), new List<List<Decimal>>());
             }
 
             await Task.Run(() =>
             {
-                foreach (String signer in checkedListBoxOrang.Items)
+                Application.UseWaitCursor = true;
+                foreach (String signer in checkedListBoxOrang.CheckedItems)
                 {
                     String signerNew = rootFolder + "\\" + signer;
                     foreach (String directoryFile in Directory.GetFiles(signerNew))
                     {
                         String fileName = directoryFile.Split('\\')[2];
-                        Debug.WriteLine(fileName);
                         String kata = fileName.Substring(0, fileName.Length - 6).ToLower();
-                        if (checkedListBoxAllKata.Items.Contains(kata))
+                        if (checkedListBoxAllKata.CheckedItems.Contains(kata))
                         {
-                            log(kata);
-
                             String[] lines = File.ReadAllLines(AppDomain.CurrentDomain.BaseDirectory + directoryFile);
 
                             foreach (string line in lines)
                             {
-                                for (int i = 0; i < allKata.Count(); i++)
+                                List<Decimal> baris = new List<Decimal>();
+                                String[] dataKolom = line.Split(',');
+                                foreach (int usingColumn in usingColumns)
                                 {
-                                    if (allKata[i] == kata)
-                                    {
-                                        data["alive"][0].Add(1);
-                                        data["alive"][0].Add(2);
-                                    }
+                                    baris.Add(Convert.ToDecimal(dataKolom[usingColumn]));
                                 }
-                                // Use a tab to indent each line of the file.
-                                //Debug.WriteLine("\t" + line);
+                                data[kata].Add(baris);
                             }
+                            /*foreach (List<Decimal> item1 in data[kata])
+                            {
+                                String temp = "";
+                                foreach (Decimal item2 in item1)
+                                {
+                                    temp += item2 + "-";
+                                }
+                                log(temp);
+                            }*/
                         }
                     }
                 }
+                Application.UseWaitCursor = false;
             });
             
             //https://github.com/accord-net/framework/wiki/Classification
@@ -137,7 +134,7 @@ namespace AustralianSignLanguange
 
         }
 
-        private async void log(String message)
+        private void log(String message)
         {
             textBoxLog.Invoke(
                 new Action(() =>
@@ -192,6 +189,38 @@ namespace AustralianSignLanguange
             eigenValue();
             eigenVector();
             pcaResult();
+        }
+
+        private void buttonOrangSelectAll_Click(object sender, EventArgs e)
+        {
+            for (int i = 0; i < checkedListBoxOrang.Items.Count; i++)
+            {
+                checkedListBoxOrang.SetItemChecked(i, true);
+            }
+        }
+
+        private void buttonOrangUnselectAll_Click(object sender, EventArgs e)
+        {
+            for (int i = 0; i < checkedListBoxOrang.Items.Count; i++)
+            {
+                checkedListBoxOrang.SetItemChecked(i, false);
+            }
+        }
+
+        private void buttonKataSelectAll_Click(object sender, EventArgs e)
+        {
+            for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
+            {
+                checkedListBoxAllKata.SetItemChecked(i, true);
+            }
+        }
+
+        private void buttonKataUnselectAll_Click(object sender, EventArgs e)
+        {
+            for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
+            {
+                checkedListBoxAllKata.SetItemChecked(i, false);
+            }
         }
     }
 }
