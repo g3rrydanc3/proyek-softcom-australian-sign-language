@@ -21,13 +21,12 @@ namespace AustralianSignLanguange
     {
         String rootFolder;
 
-        int[] usingColumns = { 0, 1, 2 };
+        int[] usingColumns = { 0, 1, 2, 3, 6, 7, 8, 9, 14 };
 
         Dictionary<string, List<List<Decimal>>> data;
+        Dictionary<string, List<List<Decimal>>> newData;
 
-        int[,] mean;
-        
-
+        Dictionary<string, Decimal> mean;
 
         public Form1()
         {
@@ -38,6 +37,8 @@ namespace AustralianSignLanguange
         {
             rootFolder = "signs";
             data = new Dictionary<string, List<List<Decimal>>>();
+            newData = new Dictionary<string, List<List<Decimal>>>();
+            mean = new Dictionary<string, Decimal>();
         }
 
         private void getAllKata(String rootFolder)
@@ -75,6 +76,11 @@ namespace AustralianSignLanguange
             for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
             {
                 data.Add(checkedListBoxAllKata.Items[i].ToString(), new List<List<Decimal>>());
+                newData.Add(checkedListBoxAllKata.Items[i].ToString(), new List<List<Decimal>>());
+                for (int j = 0; j < usingColumns.Length; j++)
+                {
+                    mean.Add(checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[j], new Decimal());
+                }
             }
 
             await Task.Run(() =>
@@ -97,7 +103,21 @@ namespace AustralianSignLanguange
                                 String[] dataKolom = line.Split(',');
                                 foreach (int usingColumn in usingColumns)
                                 {
-                                    baris.Add(Convert.ToDecimal(dataKolom[usingColumn]));
+                                    if (usingColumn == 14)
+                                    {
+                                        if(dataKolom[usingColumn]== "0x3F")
+                                        {
+                                            baris.Add(1);
+                                        }
+                                        else
+                                        {
+                                            baris.Add(0);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        baris.Add(Convert.ToDecimal(dataKolom[usingColumn]));
+                                    }
                                 }
                                 data[kata].Add(baris);
                             }
@@ -155,11 +175,58 @@ namespace AustralianSignLanguange
         private void buttonTrain_Click(object sender, EventArgs e)
         {
             train();
+            meanNormalization();
+            for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
+            {
+                List<List<Decimal>> value = newData[checkedListBoxAllKata.Items[i].ToString()];
+
+                foreach (var baris in value)
+                {
+                    foreach (var column in baris)
+                    {
+                        Debug.WriteLine(column);
+                    }
+                }
+            }
         }
 
         private void meanNormalization()
         {
+            for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
+            {
+                //List<List<Decimal>> value = data[checkedListBoxAllKata.Items[i].ToString()];
+                int length = 0;
+                MessageBox.Show(i+"");
+                foreach (List<Decimal> baris in data[checkedListBoxAllKata.Items[i].ToString()])
+                {
+                    int ctr = 0;
+                    foreach (Decimal column in baris)
+                    {
+                        Decimal count = mean[checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[ctr]] + column;
+                        mean[checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[ctr]] = count;
+                        ctr++;
+                    }
+                    length++;
+                }
+                MessageBox.Show(length+"");
+                //Debug.WriteLine(length);
+                for (int j = 0; j < usingColumns.Length; j++)
+                {
+                    //mean[checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[j]] = mean[checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[j]] / length;
+                }
 
+                /*foreach (var baris in value)
+                {
+                    List<Decimal> row = new List<Decimal>();
+                    int ctr = 0;
+                    foreach (var column in baris)
+                    {
+                        row.Add(Convert.ToDecimal(column)-mean[checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[ctr]]);
+                        ctr++;
+                    }
+                    newData[checkedListBoxAllKata.Items[i].ToString()].Add(baris);
+                }*/
+            }
         }
 
         private void covariance()
