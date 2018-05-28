@@ -68,7 +68,7 @@ namespace AustralianSignLanguange
             log("------------------------------------");
         }
 
-        private async Task train()
+        private void train()
         {
             log("TRAINING");
             log("Preparing Data");
@@ -172,9 +172,8 @@ namespace AustralianSignLanguange
         {
             Task.Run(new Action(()=>
                 {
-                    List<Task> tasks = new List<Task>();
-                    tasks.Add(train());
-                    tasks.Add(meanNormalization());
+                    train();
+                    meanNormalization();
 
                     for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
                     {
@@ -194,7 +193,7 @@ namespace AustralianSignLanguange
             
         }
 
-        private async Task meanNormalization()
+        private void meanNormalization()
         {
             for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
             {
