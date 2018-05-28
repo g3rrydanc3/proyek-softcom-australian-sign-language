@@ -68,7 +68,7 @@ namespace AustralianSignLanguange
             log("------------------------------------");
         }
 
-        private async void train()
+        private async Task train()
         {
             log("TRAINING");
             log("Preparing Data");
@@ -82,59 +82,55 @@ namespace AustralianSignLanguange
                     mean.Add(checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[j], new Decimal());
                 }
             }
-
-            await Task.Run(() =>
+            Application.UseWaitCursor = true;
+            foreach (String signer in checkedListBoxOrang.CheckedItems)
             {
-                Application.UseWaitCursor = true;
-                foreach (String signer in checkedListBoxOrang.CheckedItems)
+                String signerNew = rootFolder + "\\" + signer;
+                foreach (String directoryFile in Directory.GetFiles(signerNew))
                 {
-                    String signerNew = rootFolder + "\\" + signer;
-                    foreach (String directoryFile in Directory.GetFiles(signerNew))
+                    String fileName = directoryFile.Split('\\')[2];
+                    String kata = fileName.Substring(0, fileName.Length - 6).ToLower();
+                    if (checkedListBoxAllKata.CheckedItems.Contains(kata))
                     {
-                        String fileName = directoryFile.Split('\\')[2];
-                        String kata = fileName.Substring(0, fileName.Length - 6).ToLower();
-                        if (checkedListBoxAllKata.CheckedItems.Contains(kata))
-                        {
-                            String[] lines = File.ReadAllLines(AppDomain.CurrentDomain.BaseDirectory + directoryFile);
+                        String[] lines = File.ReadAllLines(AppDomain.CurrentDomain.BaseDirectory + directoryFile);
 
-                            foreach (string line in lines)
+                        foreach (string line in lines)
+                        {
+                            List<Decimal> baris = new List<Decimal>();
+                            String[] dataKolom = line.Split(',');
+                            foreach (int usingColumn in usingColumns)
                             {
-                                List<Decimal> baris = new List<Decimal>();
-                                String[] dataKolom = line.Split(',');
-                                foreach (int usingColumn in usingColumns)
+                                if (usingColumn == 14)
                                 {
-                                    if (usingColumn == 14)
+                                    if(dataKolom[usingColumn]== "0x3F")
                                     {
-                                        if(dataKolom[usingColumn]== "0x3F")
-                                        {
-                                            baris.Add(1);
-                                        }
-                                        else
-                                        {
-                                            baris.Add(0);
-                                        }
+                                        baris.Add(1);
                                     }
                                     else
                                     {
-                                        baris.Add(Convert.ToDecimal(dataKolom[usingColumn]));
+                                        baris.Add(0);
                                     }
                                 }
-                                data[kata].Add(baris);
-                            }
-                            /*foreach (List<Decimal> item1 in data[kata])
-                            {
-                                String temp = "";
-                                foreach (Decimal item2 in item1)
+                                else
                                 {
-                                    temp += item2 + "-";
+                                    baris.Add(Convert.ToDecimal(dataKolom[usingColumn]));
                                 }
-                                log(temp);
-                            }*/
+                            }
+                            data[kata].Add(baris);
                         }
+                        /*foreach (List<Decimal> item1 in data[kata])
+                        {
+                            String temp = "";
+                            foreach (Decimal item2 in item1)
+                            {
+                                temp += item2 + "-";
+                            }
+                            log(temp);
+                        }*/
                     }
                 }
-                Application.UseWaitCursor = false;
-            });
+            }
+            Application.UseWaitCursor = false;
             
             //https://github.com/accord-net/framework/wiki/Classification
             // Read the Excel worksheet into a DataTable
@@ -174,29 +170,36 @@ namespace AustralianSignLanguange
 
         private void buttonTrain_Click(object sender, EventArgs e)
         {
-            train();
-            meanNormalization();
-            for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
-            {
-                List<List<Decimal>> value = newData[checkedListBoxAllKata.Items[i].ToString()];
-
-                foreach (var baris in value)
+            Task.Run(new Action(()=>
                 {
-                    foreach (var column in baris)
+                    List<Task> tasks = new List<Task>();
+                    tasks.Add(train());
+                    tasks.Add(meanNormalization());
+
+                    for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
                     {
-                        Debug.WriteLine(column);
+                        List<List<Decimal>> value = newData[checkedListBoxAllKata.Items[i].ToString()];
+
+                        foreach (var baris in value)
+                        {
+                            foreach (var column in baris)
+                            {
+                                Debug.WriteLine(column);
+                            }
+                        }
                     }
-                }
-            }
+                })
+            );
+            
+            
         }
 
-        private void meanNormalization()
+        private async Task meanNormalization()
         {
             for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
             {
                 //List<List<Decimal>> value = data[checkedListBoxAllKata.Items[i].ToString()];
                 int length = 0;
-                MessageBox.Show(i+"");
                 foreach (List<Decimal> baris in data[checkedListBoxAllKata.Items[i].ToString()])
                 {
                     int ctr = 0;
@@ -208,7 +211,7 @@ namespace AustralianSignLanguange
                     }
                     length++;
                 }
-                MessageBox.Show(length+"");
+                log(i + " " + length);
                 //Debug.WriteLine(length);
                 for (int j = 0; j < usingColumns.Length; j++)
                 {
