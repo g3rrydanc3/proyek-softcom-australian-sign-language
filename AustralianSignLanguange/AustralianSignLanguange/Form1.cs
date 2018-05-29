@@ -24,9 +24,11 @@ namespace AustralianSignLanguange
         int[] usingColumns = { 0, 1, 2, 3, 6, 7, 8, 9, 14 };
 
         Dictionary<string, List<List<Decimal>>> data;
+        Dictionary<string, List<List<Decimal>>> dataNormalisasi;
         Dictionary<string, List<List<Decimal>>> newData;
 
         Dictionary<string, Decimal> mean;
+        Dictionary<string, Decimal> datavariance;
 
         public Form1()
         {
@@ -37,8 +39,10 @@ namespace AustralianSignLanguange
         {
             rootFolder = "signs";
             data = new Dictionary<string, List<List<Decimal>>>();
+            dataNormalisasi = new Dictionary<string, List<List<Decimal>>>();
             newData = new Dictionary<string, List<List<Decimal>>>();
             mean = new Dictionary<string, Decimal>();
+            datavariance = new Dictionary<string, Decimal>();
         }
 
         private void getAllKata(String rootFolder)
@@ -68,6 +72,50 @@ namespace AustralianSignLanguange
             log("------------------------------------");
         }
 
+        private void normalisasiData()
+        {
+            for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
+            {
+                Decimal[] min = { 100, 100, 100, 100, 100, 100, 100, 100, 100 };
+                Decimal[] max = { -100, -100, -100, -100, -100, -100, -100, -100, -100 };
+                String kata = checkedListBoxAllKata.Items[i].ToString();
+                foreach (List<Decimal> baris in data[kata])
+                {
+                    int ctr = 0;
+                    foreach (Decimal column in baris)
+                    {
+                        if (column < min[ctr])
+                        {
+                            min[ctr] = column;
+                        }
+                        if (column > max[ctr])
+                        {
+                            max[ctr] = column;
+                        }
+                        ctr++;
+                    }
+                }
+                foreach (List<Decimal> baris in data[kata])
+                {
+                    int ctr = 0;
+                    List<Decimal> row = new List<Decimal>();
+                    foreach (Decimal column in baris)
+                    {
+                        if (max[ctr] - min[ctr] == 0)
+                        {
+                            row.Add(0);
+                        }
+                        else
+                        {
+                            row.Add((column - min[ctr]) * (1 - 0) / (max[ctr] - min[ctr]));
+                        }
+                        ctr++;
+                    }
+                    dataNormalisasi[kata].Add(row);
+                }
+            }
+        }
+
         private void train()
         {
             log("TRAINING");
@@ -76,10 +124,12 @@ namespace AustralianSignLanguange
             for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
             {
                 data.Add(checkedListBoxAllKata.Items[i].ToString(), new List<List<Decimal>>());
+                dataNormalisasi.Add(checkedListBoxAllKata.Items[i].ToString(), new List<List<Decimal>>());
                 newData.Add(checkedListBoxAllKata.Items[i].ToString(), new List<List<Decimal>>());
                 for (int j = 0; j < usingColumns.Length; j++)
                 {
                     mean.Add(checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[j], new Decimal());
+                    datavariance.Add(checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[j], new Decimal());
                 }
             }
             Application.UseWaitCursor = true;
@@ -173,8 +223,9 @@ namespace AustralianSignLanguange
             Task.Run(new Action(()=>
                 {
                     train();
+                    normalisasiData();
                     meanNormalization();
-
+                    variance();
                     for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
                     {
                         List<List<Decimal>> value = newData[checkedListBoxAllKata.Items[i].ToString()];
@@ -189,45 +240,71 @@ namespace AustralianSignLanguange
                     }
                 })
             );
-            
-            
         }
 
         private void meanNormalization()
         {
             for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
             {
-                //List<List<Decimal>> value = data[checkedListBoxAllKata.Items[i].ToString()];
                 int length = 0;
-                foreach (List<Decimal> baris in data[checkedListBoxAllKata.Items[i].ToString()])
+                String kata = checkedListBoxAllKata.Items[i].ToString();
+                foreach (List<Decimal> baris in dataNormalisasi[kata])
                 {
                     int ctr = 0;
                     foreach (Decimal column in baris)
                     {
-                        Decimal count = mean[checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[ctr]] + column;
-                        mean[checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[ctr]] = count;
+                        Decimal count = mean[kata + "X" + usingColumns[ctr]] + column;
+                        mean[kata + "X" + usingColumns[ctr]] = count;
                         ctr++;
                     }
                     length++;
                 }
-                log(i + " " + length);
-                //Debug.WriteLine(length);
+                //log(i + " " + length);
                 for (int j = 0; j < usingColumns.Length; j++)
                 {
-                    //mean[checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[j]] = mean[checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[j]] / length;
+                    mean[kata + "X" + usingColumns[j]] = mean[kata + "X" + usingColumns[j]] / length;
                 }
 
-                /*foreach (var baris in value)
+                foreach (List<Decimal> baris in dataNormalisasi[kata])
                 {
                     List<Decimal> row = new List<Decimal>();
                     int ctr = 0;
-                    foreach (var column in baris)
+                    foreach (Decimal column in baris)
                     {
-                        row.Add(Convert.ToDecimal(column)-mean[checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[ctr]]);
+                        row.Add(Convert.ToDecimal(column)-mean[kata + "X" + usingColumns[ctr]]);
                         ctr++;
                     }
-                    newData[checkedListBoxAllKata.Items[i].ToString()].Add(baris);
-                }*/
+                    newData[kata].Add(row);
+                }
+            }
+        }
+
+        private void variance()
+        {
+            for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
+            {
+                String kata = checkedListBoxAllKata.Items[i].ToString();
+                int length = 0;
+                foreach (List<Decimal> baris in newData[kata])
+                {
+                    int ctr = 0;
+                    foreach (Decimal column in baris)
+                    {
+                        Decimal count = column*column;
+                        //log("count = " + (datavariance[checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[ctr]]) + "");
+                        datavariance[kata + "X" + usingColumns[ctr]] = datavariance[kata + "X" + usingColumns[ctr]]+count;
+                        //log((datavariance[checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[ctr]]) + "");
+                        ctr++;
+                    }
+                    length++;
+                }
+                for (int j = 0; j < usingColumns.Length; j++)
+                {
+                    //log(datavariance[checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[j]]+"");
+                    Decimal temp = datavariance[kata + "X" + usingColumns[j]] / (length - 1);
+                    datavariance[kata + "X" + usingColumns[j]] = temp;
+                    //log(datavariance[checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[j]] + "");
+                }
             }
         }
 
