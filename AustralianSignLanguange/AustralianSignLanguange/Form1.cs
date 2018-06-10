@@ -22,13 +22,29 @@ namespace AustralianSignLanguange
         String rootFolder;
 
         int[] usingColumns = { 0, 1, 2, 3, 6, 7, 8, 9, 14 };
+        int iterasi = 0;
 
-        Dictionary<string, List<List<Decimal>>> data;
-        Dictionary<string, List<List<Decimal>>> dataNormalisasi;
-        Dictionary<string, List<List<Decimal>>> newData;
+        Dictionary<string, List<List<Double>>> data; //data awal
+        Dictionary<string, List<List<Double>>> dataNormalisasi; //x yang telah di normalisasi
+                                                                 //Dictionary<string, List<List<Double>>> newData; //x asli dikurangin mean
 
-        Dictionary<string, Decimal> mean;
-        Dictionary<string, Decimal> datavariance;
+        //Dictionary<string, List<List<Double>>> hteta;
+        //Dictionary<string, List<List<Double>>> htetaBaru;
+        //Dictionary<string, List<List<Double>>> teta;
+
+
+        /* linear regression var */
+        Double[] y = new Double[98];
+        Double[] cost = new Double[98];
+        Double[] jumBaris = new Double[98];
+        List<List<Double>> hteta = new List<List<Double>>();
+        List<List<Double>> htetaBaru = new List<List<Double>>();
+        List<List<Double>> teta = new List<List<Double>>();
+        List<Double> teta0 = new List<Double>();
+        List<List<Double>> tempteta = new List<List<Double>>();
+        List<Double> tempteta0 = new List<Double>();
+        Double alpha = 0.00000000000000000001;
+        Double[] j = new Double[98];
 
         public Form1()
         {
@@ -38,11 +54,13 @@ namespace AustralianSignLanguange
         private void Form1_Load(object sender, EventArgs e)
         {
             rootFolder = "signs";
-            data = new Dictionary<string, List<List<Decimal>>>();
-            dataNormalisasi = new Dictionary<string, List<List<Decimal>>>();
-            newData = new Dictionary<string, List<List<Decimal>>>();
-            mean = new Dictionary<string, Decimal>();
-            datavariance = new Dictionary<string, Decimal>();
+            data = new Dictionary<string, List<List<Double>>>();
+            dataNormalisasi = new Dictionary<string, List<List<Double>>>();
+
+            iterasi = 50;
+            //hteta = new Dictionary<string, List<List<Double>>>();
+            //htetaBaru = new Dictionary<string, List<List<Double>>>();
+            //teta = new Dictionary<string, List<List<Double>>>();
         }
 
         private void getAllKata(String rootFolder)
@@ -76,13 +94,13 @@ namespace AustralianSignLanguange
         {
             for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
             {
-                Decimal[] min = { 100, 100, 100, 100, 100, 100, 100, 100, 100 };
-                Decimal[] max = { -100, -100, -100, -100, -100, -100, -100, -100, -100 };
+                Double[] min = { 100, 100, 100, 100, 100, 100, 100, 100, 100 };
+                Double[] max = { -100, -100, -100, -100, -100, -100, -100, -100, -100 };
                 String kata = checkedListBoxAllKata.Items[i].ToString();
-                foreach (List<Decimal> baris in data[kata])
+                foreach (List<Double> baris in data[kata])
                 {
                     int ctr = 0;
-                    foreach (Decimal column in baris)
+                    foreach (Double column in baris)
                     {
                         if (column < min[ctr])
                         {
@@ -95,11 +113,12 @@ namespace AustralianSignLanguange
                         ctr++;
                     }
                 }
-                foreach (List<Decimal> baris in data[kata])
+                int ctrBaris = 0;
+                foreach (List<Double> baris in data[kata])
                 {
                     int ctr = 0;
-                    List<Decimal> row = new List<Decimal>();
-                    foreach (Decimal column in baris)
+                    List<Double> row = new List<Double>();
+                    foreach (Double column in baris)
                     {
                         if (max[ctr] - min[ctr] == 0)
                         {
@@ -111,9 +130,121 @@ namespace AustralianSignLanguange
                         }
                         ctr++;
                     }
+                    ctrBaris++;
                     dataNormalisasi[kata].Add(row);
                 }
+                jumBaris[i] = ctrBaris;
+                teta0.Add(0);
+                tempteta0.Add(0);
             }
+            for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
+            {
+                List<Double> sublist = new List<Double>();
+                for (int j = 0; j < 9; j++)
+                {
+                    sublist.Add(0);
+                }
+                tempteta.Add(sublist);
+                teta.Add(sublist);
+            }
+            for (int i = 0; i < y.Length; i++)
+            {
+                y[i] = i+1;
+                cost[i] = 0;
+                j[i] = 1;
+            }
+            for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
+            {
+                y[i] = (y[i] - 1) * (1 - 0) / (98 - 1);
+                List<Double> sublist = new List<Double>();
+                foreach (List<Double> baris in data[checkedListBoxAllKata.Items[i].ToString()]){
+                    foreach(Double column in baris)
+                    {
+                        //log(i + "");
+                        //hteta[i].Add(0);
+                        //htetaBaru[i].Add(0);
+                    }
+                    sublist.Add(0);
+                }
+                hteta.Add(sublist);
+                htetaBaru.Add(sublist);
+            }
+        }
+        
+        private void Learn()
+        { 
+            int counterr = 0;
+            while (counterr != iterasi)
+            {
+                counterr++;
+                for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
+                {
+                    String kata = checkedListBoxAllKata.Items[i].ToString();
+                    int hitungBaris = 0;
+                    Double tempHitung = 0;
+                    //hitung hteta
+                    foreach (List<Double> baris in dataNormalisasi[kata])
+                    {
+                        int ctr = 0;
+                        tempHitung = 0;
+                        tempHitung += (teta0[i]);
+                        foreach (Double column in baris)
+                        {
+                            tempHitung += (teta[i][ctr] * column);
+                            ctr++;
+                            //log(column + "");
+                        }
+                        hteta[i][hitungBaris] = 1 / (1 + Math.Exp(-tempHitung));
+                        log(hteta[i][hitungBaris] + "");
+                        hitungBaris++;
+                    }
+
+                    //hitung teta
+                    hitungBaris = 0;
+                    foreach (List<Double> baris in dataNormalisasi[kata])
+                    {
+                        int ctr = 0;
+                        tempteta0[i] += (hteta[i][hitungBaris] - y[i]);
+                        foreach (Double column in baris)
+                        {
+                            tempteta[i][ctr] += ((hteta[i][hitungBaris] - y[i]) * column);
+                            ctr++;
+                        }
+                        hitungBaris++;
+                    }
+                    teta0[i] = teta0[i] - (alpha * tempteta0[i]);
+                    for (int j = 0; j < 9; j++)
+                    {
+                        teta[i][j] = teta[i][j] - (alpha * tempteta[i][j]);
+                    }
+
+                    //hitung hteta
+                    hitungBaris = 0;
+                    foreach (List<Double> baris in dataNormalisasi[kata])
+                    {
+                        int ctr = 0;
+                        tempHitung += (teta0[i]);
+                        foreach (Double column in baris)
+                        {
+                            tempHitung += (teta[i][ctr] * column);
+                            ctr++;
+                        }
+                        hteta[i][hitungBaris] = 1 / (1 + Math.Exp(-tempHitung));
+                        hitungBaris++;
+                    }
+
+                    Double total = 0;
+                    for (int x = 0; x < jumBaris[i] ; x++)
+                    {
+                        total += ((y[i] * Math.Log(hteta[i][x])) + ((1 - y[i]) * Math.Log(1 - hteta[i][x])));
+                    }
+                    j[i] = -total / jumBaris[i];
+                    cost[i] = j[i];
+                }
+            }
+            //log(hteta[95][1] + "");
+            iterasi = 0;
+            MessageBox.Show("Iterasi Selesai");
         }
 
         private void train()
@@ -123,14 +254,8 @@ namespace AustralianSignLanguange
 
             for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
             {
-                data.Add(checkedListBoxAllKata.Items[i].ToString(), new List<List<Decimal>>());
-                dataNormalisasi.Add(checkedListBoxAllKata.Items[i].ToString(), new List<List<Decimal>>());
-                newData.Add(checkedListBoxAllKata.Items[i].ToString(), new List<List<Decimal>>());
-                for (int j = 0; j < usingColumns.Length; j++)
-                {
-                    mean.Add(checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[j], new Decimal());
-                    datavariance.Add(checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[j], new Decimal());
-                }
+                data.Add(checkedListBoxAllKata.Items[i].ToString(), new List<List<Double>>());
+                dataNormalisasi.Add(checkedListBoxAllKata.Items[i].ToString(), new List<List<Double>>());
             }
             Application.UseWaitCursor = true;
             foreach (String signer in checkedListBoxOrang.CheckedItems)
@@ -146,7 +271,7 @@ namespace AustralianSignLanguange
 
                         foreach (string line in lines)
                         {
-                            List<Decimal> baris = new List<Decimal>();
+                            List<Double> baris = new List<Double>();
                             String[] dataKolom = line.Split(',');
                             foreach (int usingColumn in usingColumns)
                             {
@@ -163,20 +288,11 @@ namespace AustralianSignLanguange
                                 }
                                 else
                                 {
-                                    baris.Add(Convert.ToDecimal(dataKolom[usingColumn]));
+                                    baris.Add(Convert.ToDouble(dataKolom[usingColumn]));
                                 }
                             }
                             data[kata].Add(baris);
                         }
-                        /*foreach (List<Decimal> item1 in data[kata])
-                        {
-                            String temp = "";
-                            foreach (Decimal item2 in item1)
-                            {
-                                temp += item2 + "-";
-                            }
-                            log(temp);
-                        }*/
                     }
                 }
             }
@@ -224,117 +340,13 @@ namespace AustralianSignLanguange
                 {
                     train();
                     normalisasiData();
-                    meanNormalization();
-                    variance();
+                    Learn();
                     for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
                     {
-                        List<List<Decimal>> value = newData[checkedListBoxAllKata.Items[i].ToString()];
-
-                        foreach (var baris in value)
-                        {
-                            foreach (var column in baris)
-                            {
-                                Debug.WriteLine(column);
-                            }
-                        }
+                        //log(y[i] + "");
                     }
                 })
             );
-        }
-
-        private void meanNormalization()
-        {
-            for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
-            {
-                int length = 0;
-                String kata = checkedListBoxAllKata.Items[i].ToString();
-                foreach (List<Decimal> baris in dataNormalisasi[kata])
-                {
-                    int ctr = 0;
-                    foreach (Decimal column in baris)
-                    {
-                        Decimal count = mean[kata + "X" + usingColumns[ctr]] + column;
-                        mean[kata + "X" + usingColumns[ctr]] = count;
-                        ctr++;
-                    }
-                    length++;
-                }
-                //log(i + " " + length);
-                for (int j = 0; j < usingColumns.Length; j++)
-                {
-                    mean[kata + "X" + usingColumns[j]] = mean[kata + "X" + usingColumns[j]] / length;
-                }
-
-                foreach (List<Decimal> baris in dataNormalisasi[kata])
-                {
-                    List<Decimal> row = new List<Decimal>();
-                    int ctr = 0;
-                    foreach (Decimal column in baris)
-                    {
-                        row.Add(Convert.ToDecimal(column)-mean[kata + "X" + usingColumns[ctr]]);
-                        ctr++;
-                    }
-                    newData[kata].Add(row);
-                }
-            }
-        }
-
-        private void variance()
-        {
-            for (int i = 0; i < checkedListBoxAllKata.Items.Count; i++)
-            {
-                String kata = checkedListBoxAllKata.Items[i].ToString();
-                int length = 0;
-                foreach (List<Decimal> baris in newData[kata])
-                {
-                    int ctr = 0;
-                    foreach (Decimal column in baris)
-                    {
-                        Decimal count = column*column;
-                        //log("count = " + (datavariance[checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[ctr]]) + "");
-                        datavariance[kata + "X" + usingColumns[ctr]] = datavariance[kata + "X" + usingColumns[ctr]]+count;
-                        //log((datavariance[checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[ctr]]) + "");
-                        ctr++;
-                    }
-                    length++;
-                }
-                for (int j = 0; j < usingColumns.Length; j++)
-                {
-                    //log(datavariance[checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[j]]+"");
-                    Decimal temp = datavariance[kata + "X" + usingColumns[j]] / (length - 1);
-                    datavariance[kata + "X" + usingColumns[j]] = temp;
-                    //log(datavariance[checkedListBoxAllKata.Items[i].ToString() + "X" + usingColumns[j]] + "");
-                }
-            }
-        }
-
-        private void covariance()
-        {
-
-        }
-
-        private void eigenValue()
-        {
-
-        }
-
-        private void eigenVector()
-        {
-
-        }
-
-        private void pcaResult()
-        {
-
-        }
-
-        private void pca()
-        {
-            meanNormalization();
-            covariance();
-            eigenValue();
-            eigenVector();
-            pcaResult();
         }
 
         private void buttonOrangSelectAll_Click(object sender, EventArgs e)
