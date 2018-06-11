@@ -29,7 +29,6 @@ namespace AustralianSignLanguange
 
         /* linear regression var */
         Double[] y = new Double[98];
-        List<Double> tempteta0 = new List<Double>();
         List<Double> newY = new List<Double>();
         Double cost = 0;
         Double jumBaris = 0;
